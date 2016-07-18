@@ -13,7 +13,7 @@ public class Secrets {
         return new LocalSecretManager(key.getBytes(StandardCharsets.UTF_8), folder);
     }
 
-    static SecretManager s3SecretManager(String key, AmazonS3Client s3Client, String folder, String bucket) {
+    static SecretManager s3SecretManager(String key, AmazonS3Client s3Client, String bucket, String folder) {
         return new S3SecretManager(key.getBytes(StandardCharsets.UTF_8), bucket, folder, s3Client);
     }
 }
