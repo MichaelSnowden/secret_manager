@@ -2,7 +2,7 @@
 
 This project provides a simple way to store and retrieve secrets (usually username/password credential pairs)
 
-## Usage
+## Command line usage
 
 - Clone this repository somewhere
 - Create a properties file in "~/.secretManager/config.properties" like this for example
@@ -24,3 +24,26 @@ $ java -jar target/secretManager.jar -a WRITE -s S3 -p username=michael -p passw
 #!/usr/bin/env bash
 java -jar /path/to/secret_manager/target/secretManager.jar "$@"
 ```
+
+## Programmatic usage
+
+- Add this to your pom.xml
+
+```xml
+<repositories>
+    <repository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+    </repository>
+</repositories>
+
+<dependencies>
+    <dependency>
+        <groupId>com.github.MichaelSnowden</groupId>
+        <artifactId>secret_manager</artifactId>
+        <version>commit hash</version>
+    </dependency>
+</dependencies>
+```
+
+Then start by using the `Secrets` class. That is the recommended entry point to this API.
