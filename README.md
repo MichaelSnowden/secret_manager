@@ -17,7 +17,7 @@ s3SecretsFolder=my-folder # Only necessary if using S3 to store secrets
 ```bash
 $ cd /path/to/secret_manager
 $ mvn clean compile assembly:single
-$ java -jar target/secretManager.jar -a WRITE -s S3 -p username=michael -p password=password
+$ java -jar target/secretManager.jar -a WRITE -s S3 -id GitHub -p username=michael -p password=password
 ```
 - I recommend creating a bash script to make this a little easier and adding it to your `$PATH`
 ```bash
