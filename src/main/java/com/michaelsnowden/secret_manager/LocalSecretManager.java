@@ -2,23 +2,22 @@ package com.michaelsnowden.secret_manager;
 
 import com.amazonaws.util.IOUtils;
 
-import javax.crypto.NoSuchPaddingException;
-import java.io.*;
-import java.security.NoSuchAlgorithmException;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Properties;
 import java.util.stream.Collectors;
 
 /**
  * Created by michael.snowden on 7/18/16.
  */
-public class LocalSecretManager implements SecretManager {
-    private final byte[] key;
+public class LocalSecretManager extends SecretManager {
     private final File folder;
 
-    LocalSecretManager(byte[] key, File folder) {
-        this.key = key;
+    LocalSecretManager(byte[] cryptoKey, File folder) {
+        super(cryptoKey);
         this.folder = folder;
     }
 
@@ -30,32 +29,19 @@ public class LocalSecretManager implements SecretManager {
     }
 
     @Override
-    public Properties readSecret(String id) throws SecretManagerException {
+    public byte[] readSecretBytes(String id) throws SecretManagerException {
         try (FileInputStream fileInputStream = new FileInputStream(new File(folder, id))) {
-            byte[] fileBytes = IOUtils.toByteArray(fileInputStream);
-            byte[] iv = new byte[16];
-            System.arraycopy(fileBytes, 0, iv, 0, 16);
-            byte[] encryptedData = new byte[fileBytes.length - 16];
-            System.arraycopy(fileBytes, 16, encryptedData, 0, fileBytes.length - 16);
-            byte[] decryptedData = new Decryptor(key, iv).decrypt(encryptedData);
-            ByteArrayInputStream inputStream = new ByteArrayInputStream(decryptedData);
-            Properties properties = new Properties();
-            properties.load(inputStream);
-            return properties;
-        } catch (IOException | CryptoException e) {
+            return IOUtils.toByteArray(fileInputStream);
+        } catch (IOException e) {
             throw new SecretManagerException(e);
         }
     }
 
     @Override
-    public void writeSecret(String id, Properties secret) throws SecretManagerException {
+    public void writeSecretBytes(String id, byte [] secret) throws SecretManagerException {
         try (FileOutputStream fileOutputStream = new FileOutputStream(new File(folder, id))) {
-            byte [] iv = getRandomIv();
-            fileOutputStream.write(iv);
-            ByteArrayOutputStream output = new ByteArrayOutputStream();
-            secret.store(output, null);
-            fileOutputStream.write(new Encryptor(key, iv).encrypt(output.toByteArray()));
-        } catch (IOException | CryptoException e) {
+            fileOutputStream.write(secret);
+        } catch (IOException e) {
             throw new SecretManagerException(e);
         }
     }
