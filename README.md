@@ -13,7 +13,7 @@ s3SecretsBucket=my-bucket # Only necessary if using S3 to store secrets
 s3SecretsFolder=my-folder # Only necessary if using S3 to store secrets
 ```
 - If storing passwords in S3, make sure your AWS credentials are stored on the computer by downloading the AWS CLI and running `aws configure`
-
+- Build the jar with Maven
 ```bash
 $ cd /path/to/secret_manager
 $ mvn clean compile assembly:single
