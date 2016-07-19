@@ -7,7 +7,7 @@ This project provides a simple way to store and retrieve secrets (usually userna
 - Clone this repository somewhere
 - Create a properties file in "~/.secretManager/config.properties" like this for example
 ```
-encryptionKey=0123456789ABCDEF # Any 16-character-long string will do
+cryptoKey=0123456789ABCDEF # Any 16-character-long string will do
 localSecretsFolder=~/.secretManager/secrets # Only necessary if using the local file system to store secrets
 s3SecretsBucket=my-bucket # Only necessary if using S3 to store secrets
 s3SecretsFolder=my-folder # Only necessary if using S3 to store secrets
@@ -46,4 +46,6 @@ java -jar /path/to/secret_manager/target/secretManager.jar "$@"
 </dependencies>
 ```
 
-Then start by using the `Secrets` class. That is the recommended entry point to this API.
+Then start by using either the `LocalSecretManger` or `S3SecretManger` class. 
+You can also create your own secret manager by extending `SecretManager`.
+You will simply have to provide a method for reading and writing bytes, as well as deleting and listing entries.

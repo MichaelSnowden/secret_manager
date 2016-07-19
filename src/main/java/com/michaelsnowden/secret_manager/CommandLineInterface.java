@@ -9,6 +9,7 @@ import org.kohsuke.args4j.Option;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
@@ -57,18 +58,28 @@ public class CommandLineInterface {
     enum Storage {
         LOCAL {
             @Override
-            public SecretManager getSecretManager(Properties config) {
-                return Secrets.localSecretManager(config.getProperty("encryptionKey"), new File(config.getProperty("localSecretsFolder")));
+            public SecretManager getSecretManager(Properties config) throws CryptoKeyLengthException {
+                String cryptoKey = config.getProperty("cryptoKey");
+                if (cryptoKey.length() != 16) {
+                    throw new CryptoKeyLengthException(cryptoKey);
+                }
+                return new LocalSecretManager(cryptoKey
+                        .getBytes(StandardCharsets.UTF_8), new File(config.getProperty("localSecretsFolder")));
             }
         },
         S3 {
             @Override
-            public SecretManager getSecretManager(Properties config) {
-                return Secrets.s3SecretManager(config.getProperty("encryptionKey"), new AmazonS3Client(new ProfileCredentialsProvider()), config.getProperty("s3SecretsBucket"), config.getProperty("s3SecretsFolder"));
+            public SecretManager getSecretManager(Properties config) throws CryptoKeyLengthException {
+                String cryptoKey = config.getProperty("cryptoKey");
+                if (cryptoKey.length() != 16) {
+                    throw new CryptoKeyLengthException(cryptoKey);
+                }
+                return new S3SecretManager(cryptoKey
+                        .getBytes(StandardCharsets.UTF_8), config.getProperty("s3SecretsBucket"), config.getProperty("s3SecretsFolder"), new AmazonS3Client(new ProfileCredentialsProvider()));
             }
         };
 
-        public abstract SecretManager getSecretManager(Properties config);
+        public abstract SecretManager getSecretManager(Properties config) throws CryptoKeyLengthException;
     }
 
     @Option(name = "-a", usage = "The action  to take", required = true)
@@ -103,7 +114,12 @@ public class CommandLineInterface {
             System.out.println("Here, you should set the 'encryptionKey' to a 16-character-long string");
             System.out.println("You should also set 'localSecretsFolder' or 's3SecretsBucket' and 's3SecretsFolder' depending on whether you are using S3 or the local file system to store secrets");
         }
-        action.perform(storage.getSecretManager(config), id, map);
+        try {
+            SecretManager secretManager = storage.getSecretManager(config);
+            action.perform(secretManager, id, map);
+        } catch (CryptoKeyLengthException e) {
+            System.out.println(e.getMessage());
+        }
     }
 
     public static void main(String[] args) throws Exception {
