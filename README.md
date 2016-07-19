@@ -24,6 +24,21 @@ $ java -jar target/secretManager.jar -a WRITE -s S3 -id GitHub -p username=micha
 #!/usr/bin/env bash
 java -jar /path/to/secret_manager/target/secretManager.jar "$@"
 ```
+Then the command line usage would usually look something like this
+```bash
+$ secrets -s S3 -a LIST
+[]
+$ secrets -s S3 -a WRITE -id GitHub -p username=michael -p password=password -p something=else
+$ secrets -s S3 -a LIST
+[GitHub]
+$ secrets -s S3 -a READ -id GitHub
+username = michael
+password = password
+something = else
+$ secrets -s S3 -a DELETE -id GitHub
+$ secrets -s S3 -a LIST
+[]
+```
 
 ## Programmatic usage
 
