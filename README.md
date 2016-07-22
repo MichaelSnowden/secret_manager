@@ -13,7 +13,7 @@ s3SecretsBucket=my-bucket # Only necessary if using S3 to store secrets
 s3SecretsFolder=my-folder # Only necessary if using S3 to store secrets
 ```
 - If storing passwords in S3, make sure your AWS credentials are stored on the computer by downloading the AWS CLI and running `aws configure`
-
+- Build the jar with Maven
 ```bash
 $ cd /path/to/secret_manager
 $ mvn clean compile assembly:single
@@ -23,6 +23,21 @@ $ java -jar target/secretManager.jar -a WRITE -s S3 -id GitHub -p username=micha
 ```bash
 #!/usr/bin/env bash
 java -jar /path/to/secret_manager/target/secretManager.jar "$@"
+```
+Then the command line usage would usually look something like this
+```bash
+$ secrets -s S3 -a LIST
+[]
+$ secrets -s S3 -a WRITE -id GitHub -p username=michael -p password=password -p something=else
+$ secrets -s S3 -a LIST
+[GitHub]
+$ secrets -s S3 -a READ -id GitHub
+username = michael
+password = password
+something = else
+$ secrets -s S3 -a DELETE -id GitHub
+$ secrets -s S3 -a LIST
+[]
 ```
 
 ## Programmatic usage
