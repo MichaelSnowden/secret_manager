@@ -1,15 +1,10 @@
 package com.michaelsnowden.secret_manager;
 
-import com.amazonaws.auth.profile.ProfileCredentialsProvider;
-import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
@@ -21,7 +16,7 @@ public class CommandLineInterface {
     enum Action {
         LIST {
             @Override
-            public void perform(SecretManager secretManager, String id, Map<String, String> map) throws SecretManagerException {
+            public void perform(SecretManager secretManager, String id, Map<String, String> map) {
                 System.out.println(secretManager.listSecrets()
                         .stream()
                         .collect(Collectors.toList()));
@@ -29,15 +24,19 @@ public class CommandLineInterface {
         },
         READ {
             @Override
-            public void perform(SecretManager secretManager, String id, Map<String, String> map) throws SecretManagerException {
+            public void perform(SecretManager secretManager, String id, Map<String, String> map) {
                 assert id != null;
-                secretManager.readSecret(id)
-                        .forEach((k, v) -> System.out.println(k + " = " + v));
+                try {
+                    secretManager.readSecret(id)
+                            .forEach((k, v) -> System.out.println(k + " = " + v));
+                } catch (AmazonS3Exception e) {
+                    System.out.println(id + " does not exist");
+                }
             }
         },
         WRITE {
             @Override
-            public void perform(SecretManager secretManager, String id, Map<String, String> map) throws SecretManagerException {
+            public void perform(SecretManager secretManager, String id, Map<String, String> map) {
                 assert id != null;
                 Properties properties = new Properties();
                 properties.putAll(map);
@@ -46,40 +45,30 @@ public class CommandLineInterface {
         },
         DELETE {
             @Override
-            public void perform(SecretManager secretManager, String id, Map<String, String> map) throws SecretManagerException {
+            public void perform(SecretManager secretManager, String id, Map<String, String> map) {
                 assert id != null;
                 secretManager.deleteSecret(id);
             }
         };
 
-        public abstract void perform(SecretManager secretManager, String id, Map<String, String> map) throws Exception;
+        public abstract void perform(SecretManager secretManager, String id, Map<String, String> map);
     }
 
     enum Storage {
         LOCAL {
             @Override
-            public SecretManager getSecretManager(Properties config) throws CryptoKeyLengthException {
-                String cryptoKey = config.getProperty("cryptoKey");
-                if (cryptoKey.length() != 16) {
-                    throw new CryptoKeyLengthException(cryptoKey);
-                }
-                return new LocalSecretManager(cryptoKey
-                        .getBytes(StandardCharsets.UTF_8), new File(config.getProperty("localSecretsFolder")));
+            public SecretManager getSecretManager() {
+                return LocalSecretManager.localSecretManager();
             }
         },
         S3 {
             @Override
-            public SecretManager getSecretManager(Properties config) throws CryptoKeyLengthException {
-                String cryptoKey = config.getProperty("cryptoKey");
-                if (cryptoKey.length() != 16) {
-                    throw new CryptoKeyLengthException(cryptoKey);
-                }
-                return new S3SecretManager(cryptoKey
-                        .getBytes(StandardCharsets.UTF_8), config.getProperty("s3SecretsBucket"), config.getProperty("s3SecretsFolder"), new AmazonS3Client(new ProfileCredentialsProvider()));
+            public SecretManager getSecretManager() {
+                return S3SecretManager.secretManager();
             }
         };
 
-        public abstract SecretManager getSecretManager(Properties config) throws CryptoKeyLengthException;
+        public abstract SecretManager getSecretManager();
     }
 
     @Option(name = "-a", usage = "The action  to take", required = true)
@@ -104,18 +93,8 @@ public class CommandLineInterface {
             cmdLineParser.printUsage(System.out);
             return;
         }
-        File secretManagerDirectory = new File(System.getProperty("user.home"), ".secretManager");
-        Properties config = new Properties();
-        File configFile = new File(secretManagerDirectory, "config.properties");
         try {
-            config.load(new FileInputStream(configFile));
-        } catch (FileNotFoundException e) {
-            System.out.println("Please make sure that the config file is located at " + configFile.getAbsolutePath());
-            System.out.println("Here, you should set the 'encryptionKey' to a 16-character-long string");
-            System.out.println("You should also set 'localSecretsFolder' or 's3SecretsBucket' and 's3SecretsFolder' depending on whether you are using S3 or the local file system to store secrets");
-        }
-        try {
-            SecretManager secretManager = storage.getSecretManager(config);
+            SecretManager secretManager = storage.getSecretManager();
             action.perform(secretManager, id, map);
         } catch (CryptoKeyLengthException e) {
             System.out.println(e.getMessage());

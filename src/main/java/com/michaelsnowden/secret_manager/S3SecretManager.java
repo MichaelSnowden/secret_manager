@@ -1,5 +1,6 @@
 package com.michaelsnowden.secret_manager;
 
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.*;
 import com.amazonaws.util.IOUtils;
@@ -14,8 +15,19 @@ import java.util.stream.Collectors;
  */
 public class S3SecretManager extends SecretManager {
     private final AmazonS3Client s3Client;
-    private final String bucket;
-    private final String folder;
+    private String bucket;
+    private String folder;
+
+    public static S3SecretManager secretManager() {
+        Configuration configuration = Configuration.configuration();
+        byte[] cryptoKey = configuration.getCryptoKey();
+        String s3SecretsBucket = configuration.getS3SecretsBucket();
+        String s3SecretsFolder = configuration
+                .getS3SecretsFolder();
+        ProfileCredentialsProvider credentialsProvider = new ProfileCredentialsProvider();
+        AmazonS3Client s3Client = new AmazonS3Client(credentialsProvider);
+        return new S3SecretManager(cryptoKey, s3SecretsBucket, s3SecretsFolder, s3Client);
+    }
 
     public S3SecretManager(byte[] cryptoKey, String bucket, String folder, AmazonS3Client s3Client) {
         super(cryptoKey);
@@ -42,12 +54,12 @@ public class S3SecretManager extends SecretManager {
     }
 
     @Override
-    public byte[] readSecretBytes(String id) throws SecretManagerException {
+    public byte[] readSecretBytes(String id) {
         try {
             S3Object object = s3Client.getObject(new GetObjectRequest(bucket, folder + "/" + id));
             return IOUtils.toByteArray(object.getObjectContent());
         } catch (IOException e) {
-            throw new SecretManagerException(e);
+            throw new RuntimeException(e);
         }
     }
 
@@ -58,5 +70,13 @@ public class S3SecretManager extends SecretManager {
         metadata.setContentLength(bytes.length);
         PutObjectRequest request = new PutObjectRequest(bucket, folder + "/" + id, input, metadata);
         s3Client.putObject(request);
+    }
+
+    public void setBucket(String bucket) {
+        this.bucket = bucket;
+    }
+
+    public void setFolder(String folder) {
+        this.folder = folder;
     }
 }

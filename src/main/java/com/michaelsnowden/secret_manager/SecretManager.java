@@ -24,11 +24,11 @@ public abstract class SecretManager {
         this.cryptoKey = cryptoKey;
     }
 
-    public abstract List<String> listSecrets() throws SecretManagerException;
+    public abstract List<String> listSecrets();
 
-    public abstract void deleteSecret(String id) throws SecretManagerException;
+    public abstract void deleteSecret(String id);
 
-    public final void writeSecret(String id, Properties secret) throws SecretManagerException {
+    public final void writeSecret(String id, Properties secret) {
         try {
             Cipher cipher = Cipher.getInstance("AES");
             byte[] iv = new byte[cipher.getBlockSize()];
@@ -41,11 +41,11 @@ public abstract class SecretManager {
             byte[] allBytes = ArrayUtils.addAll(iv, encryptedBytes);
             writeSecretBytes(id, allBytes);
         } catch (CryptoException | IOException | NoSuchPaddingException | NoSuchAlgorithmException e) {
-            throw new SecretManagerException(e);
+            throw new RuntimeException(e);
         }
     }
 
-    public final Properties readSecret(String id) throws SecretManagerException {
+    public final Properties readSecret(String id) {
         try {
             byte[] fileBytes = readSecretBytes(id);
             byte[] iv = new byte[16];
@@ -58,11 +58,11 @@ public abstract class SecretManager {
             properties.load(inputStream);
             return properties;
         } catch (CryptoException | IOException e) {
-            throw new SecretManagerException(e);
+            throw new RuntimeException(e);
         }
     }
 
-    protected abstract void writeSecretBytes(String id, byte[] secret) throws SecretManagerException;
+    protected abstract void writeSecretBytes(String id, byte[] secret);
 
-    protected abstract byte[] readSecretBytes(String id) throws SecretManagerException;
+    protected abstract byte[] readSecretBytes(String id);
 }

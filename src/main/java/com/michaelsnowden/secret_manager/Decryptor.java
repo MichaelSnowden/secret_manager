@@ -16,7 +16,7 @@ import java.security.NoSuchAlgorithmException;
 public class Decryptor {
     final Cipher cipher;
 
-    public Decryptor(byte[] key, byte[] iv) throws CryptoException {
+    public Decryptor(byte[] key, byte[] iv) {
         try {
             IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
             SecretKeySpec secretKeySpec = new SecretKeySpec(key, "AES");
@@ -27,7 +27,7 @@ public class Decryptor {
         }
     }
 
-    public byte[] decrypt(byte[] bytes) throws CryptoException {
+    public byte[] decrypt(byte[] bytes) {
         try {
             return cipher.doFinal(bytes);
         } catch (BadPaddingException | IllegalBlockSizeException e) {
